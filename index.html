@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Task Voter</title>
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
+
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/vue/2.6.10/vue.min.js"></script>  
+
+    <style type="text/css">
+    	body{
+    		margin-top: 20px;
+    	}
+    </style>
+</head>
+<body>
+	<div id="wrapper" class="container">
+		<div v-if="page == 'session-list'">
+			<button class="btn" v-on:click="page = 'create-session'">Create New Session</button>
+
+			<table class="striped">
+				<tr>
+					<td>Session Id</td>
+					<td>Title</td>
+					<td>Online</td>
+					<td>Actions</td>
+				</tr>
+				<tr v-for="session in sessions">
+					<td>{{session.id}}</td>
+					<td>{{session.title}}</td>
+					<td>{{session.online}}</td>
+					<td><a href="javascript:;" v-on:click="connectSession(session.id)">Connect</a></td>
+				</tr>
+			</table>
+		</div>
+
+		<div v-if="page == 'create-session'">
+			<form v-on:submit="createSession()">
+				<div class="input-field col s6">
+					<input v-model="form.title" placeholder="Session name" id="session-name" type="text" class="validate">
+					<label for="session-name">Session Name</label>
+				</div>
+				<button class="btn">Create Session</button>
+			</form>
+		</div>
+
+		<div v-if="page == 'session'">
+			<a href=".">Go back to sessions</a>
+			
+			<table class="striped">
+				<tr>
+					<th>Session Id</th>
+					<td>{{currentSession.id}}</td>
+				</tr>
+				<tr>
+					<th>Title</th>
+					<td>{{currentSession.title}}</td>
+				</tr>
+				<tr>
+					<th>Online</th>
+					<td>{{currentSession.online}}</td>
+				</tr>
+			</table>
+		</div>
+	</div>
+
+	<script type="text/javascript">
+		var generateId = function () {
+			return '_' + Math.random().toString(36).substr(2, 9);
+		};
+
+		var app = new Vue({
+			el : '#wrapper',
+			data : {
+				userId         : generateId(),
+				page           : 'session-list',
+				sessions       : [],
+				currentSession : {
+					id     : '',
+					title  : '',
+					online : 0
+				},
+				form : {
+					title : ''
+				},
+				config : {
+					interval : 2000
+				}
+			},
+			methods : {
+				init : function(){
+					this.getSessions();
+
+					setInterval(function(){
+						app.getSessionDetails();
+					}, this.config.interval);
+				},
+				createSession : function(){
+					this.service('create-session', {
+						title : app.form.title
+					}, function(data){
+						app.sessions = data;
+					});
+				},
+				connectSession : function(sessionId){
+					this.page = 'session';
+					this.currentSession.id = sessionId;
+				},
+				getSessionDetails : function(){
+					if(this.page == 'session'){
+						this.service('session', {
+							id : this.currentSession.id,
+							userId : this.userId,
+						}, function(data){
+							app.currentSession.title  = data.title;
+							app.currentSession.online = data.online;
+						});
+					}
+				},
+				getSessions : function(){
+					this.service('session-list', {}, function(data){
+						app.sessions = data;
+					});
+				},
+				service : function(route, data, callback){
+					$.post(route, data, callback);
+				}
+			}
+		});
+
+		$(document).ready(function(){
+			app.init();
+		});
+	</script>
+</body>
+</html>
