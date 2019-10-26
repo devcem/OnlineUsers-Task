@@ -81,3 +81,4 @@ app.post('/create-session', function (req, res) {
 });
 
 app.listen(8080);
+console.log('Server started at localhost:8080');
